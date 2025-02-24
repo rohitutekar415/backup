@@ -1,7 +1,7 @@
 name: Backup and Restore PostgreSQL
 
 on:
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:  # Allows manual trigger
 
 jobs:
   backup_restore:
@@ -30,13 +30,13 @@ jobs:
         run: sudo apt-get install -y postgresql-client
 
       - name: Run PostgreSQL Backup
+        run: python3 postgres_backup_restore.py
         env:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
           BACKUP_DIR: backup
           MODE: backup
-        run: python3 postgres_backup_restore.py
 
       - name: Upload backup files as artifact
         uses: actions/upload-artifact@v3
@@ -46,6 +46,10 @@ jobs:
 
       - name: Restore PostgreSQL (Optional)
         if: false  # Set to true if you want auto-restore
+        run: python3 postgres_backup_restore.py
         env:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-    
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          BACKUP_DIR: backup
+          MODE: restore
