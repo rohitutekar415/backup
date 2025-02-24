@@ -11,13 +11,13 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: mysecretpassword
+          POSTGRES_DB: mydb
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }}"
+          --health-cmd "pg_isready -U postgres -d mydb"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -30,13 +30,13 @@ jobs:
         run: sudo apt-get install -y postgresql-client
 
       - name: Run PostgreSQL Backup
-        run: python3 postgres_backup_restore.py
         env:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
           BACKUP_DIR: backup
           MODE: backup
+        run: python3 postgres_backup_restore.py
 
       - name: Upload backup files as artifact
         uses: actions/upload-artifact@v3
@@ -46,10 +46,10 @@ jobs:
 
       - name: Restore PostgreSQL (Optional)
         if: false  # Set to true if you want auto-restore
-        run: python3 postgres_backup_restore.py
         env:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
           BACKUP_DIR: backup
           MODE: restore
+        run: python3 postgres_backup_restore.py
