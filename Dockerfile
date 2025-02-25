@@ -4,15 +4,12 @@ FROM postgres:15
 # Install Python inside the container
 RUN apt-get update && apt-get install -y python3 python3-pip
 
-# Set environment variables dynamically from secrets
-ARG POSTGRES_USER
-ARG POSTGRES_PASSWORD
-ARG POSTGRES_DB
-ARG BACKUP_DIR=/backup
-ARG MODE=restore
-
-ENV BACKUP_DIR=${BACKUP_DIR}
-ENV MODE=${MODE}
+# Set environment variables
+ENV POSTGRES_USER=postgres
+ENV POSTGRES_PASSWORD=mysecretpassword
+ENV POSTGRES_DB=mydb
+ENV BACKUP_DIR=/backup
+ENV MODE=restore
 
 # Set working directory
 WORKDIR /app
