@@ -1,7 +1,7 @@
 name: Backup and Restore PostgreSQL
 
 on:
-  workflow_dispatch:  # Allows manual trigger from GitHub Actions UI
+  workflow_dispatch:  # Allows manual trigger
 
 jobs:
   backup_restore:
@@ -10,26 +10,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
-      - name: Start PostgreSQL Container
-        run: |
-          docker run -d \
-            --name postgres \
-            -e POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
-            -e POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
-            -e POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
-            -p 5432:5432 \
-            postgres:15
-
-      - name: Wait for PostgreSQL to be ready
-        run: |
-          echo "⏳ Waiting for PostgreSQL to start..."
-          for i in {1..30}; do
-            pg_isready -h localhost -p 5432 -U ${{ secrets.POSTGRES_USER }} && break
-            echo "⏳ PostgreSQL not ready yet. Retrying..."
-            sleep 5
-          done
-          echo "✅ PostgreSQL is ready!"
 
       - name: Install PostgreSQL client
         run: sudo apt-get install -y postgresql-client
@@ -50,7 +30,7 @@ jobs:
           path: backup/
 
       - name: Restore PostgreSQL (Optional)
-        if: false  # Change to `true` if you want auto-restore
+        if: false  # Set to true if you want auto-restore
         env:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
