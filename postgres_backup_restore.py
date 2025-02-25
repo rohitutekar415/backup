@@ -1,13 +1,19 @@
 import os
+import sys
 import subprocess
 import time
 
-# Database credentials
-PG_USER = "postgres"
-PG_PASSWORD = "mysecretpassword"
-DB_NAME = "mydb"
+# Get database credentials from environment variables
+PG_USER = os.getenv("POSTGRES_USER")
+PG_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+DB_NAME = os.getenv("POSTGRES_DB")
 BACKUP_DIR = "/backup"
 SCHEMA_FILE = f"{BACKUP_DIR}/schema.sql"
+
+# Ensure all required environment variables are set
+if not all([PG_USER, PG_PASSWORD, DB_NAME]):
+    print("❌ Missing database credentials! Ensure POSTGRES_USER, POSTGRES_PASSWORD, and POSTGRES_DB are set.")
+    sys.exit(1)
 
 # Function to check if PostgreSQL is ready
 def wait_for_postgres():
