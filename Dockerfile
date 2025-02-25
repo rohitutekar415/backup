@@ -4,10 +4,10 @@ FROM postgres:15
 # Install Python inside the container
 RUN apt-get update && apt-get install -y python3 python3-pip
 
-# Set environment variables
-ENV POSTGRES_USER=postgres
-ENV POSTGRES_PASSWORD=mysecretpassword
-ENV POSTGRES_DB=mydb
+# Set environment variables (but do not define values)
+ENV POSTGRES_USER=""
+ENV POSTGRES_PASSWORD=""
+ENV POSTGRES_DB=""
 ENV BACKUP_DIR=/backup
 ENV MODE=restore
 
