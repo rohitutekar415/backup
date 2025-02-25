@@ -1,19 +1,16 @@
 import os
-import sys
 import subprocess
 import time
 
-# Get database credentials from environment variables
+# Load database credentials from environment variables
 PG_USER = os.getenv("POSTGRES_USER")
 PG_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 DB_NAME = os.getenv("POSTGRES_DB")
-BACKUP_DIR = "/backup"
+BACKUP_DIR = os.getenv("BACKUP_DIR", "./backup")
 SCHEMA_FILE = f"{BACKUP_DIR}/schema.sql"
 
-# Ensure all required environment variables are set
-if not all([PG_USER, PG_PASSWORD, DB_NAME]):
-    print("❌ Missing database credentials! Ensure POSTGRES_USER, POSTGRES_PASSWORD, and POSTGRES_DB are set.")
-    sys.exit(1)
+# Ensure backup directory exists
+os.makedirs(BACKUP_DIR, exist_ok=True)
 
 # Function to check if PostgreSQL is ready
 def wait_for_postgres():
@@ -32,10 +29,9 @@ def wait_for_postgres():
             print("⏳ Waiting for PostgreSQL to be ready...")
             time.sleep(2)
 
-# Function to backup database tables and schema
+# Function to backup database schema and tables
 def backup_database():
     print("📦 Taking backup of database in CSV format...")
-    os.makedirs(BACKUP_DIR, exist_ok=True)
 
     # Backup schema
     try:
@@ -65,8 +61,8 @@ def backup_database():
             return
         
         for table in tables:
-            print(f"🔄 Backing up table: {table}")
             backup_file = f"{BACKUP_DIR}/{table}.csv"
+            print(f"🔄 Backing up table: {table}")
             
             try:
                 subprocess.run(
@@ -80,9 +76,10 @@ def backup_database():
     except subprocess.CalledProcessError:
         print("❌ Failed to retrieve table names!")
 
-# Function to restore database tables and schema
+# Function to restore database
 def restore_database():
     print("♻️ Restoring database from backup files...")
+
     if not os.path.exists(BACKUP_DIR):
         print(f"❌ Backup directory {BACKUP_DIR} not found!")
         return
@@ -90,7 +87,7 @@ def restore_database():
     if not os.path.exists(SCHEMA_FILE):
         print("❌ Schema backup file not found!")
         return
-    
+
     # Restore schema
     try:
         subprocess.run(
@@ -102,7 +99,7 @@ def restore_database():
     except subprocess.CalledProcessError as e:
         print("❌ Error restoring schema!", e)
         return
-    
+
     csv_files = [f for f in os.listdir(BACKUP_DIR) if f.endswith(".csv")]
     if not csv_files:
         print("❌ No backup files found!")
@@ -113,11 +110,12 @@ def restore_database():
         backup_file = os.path.join(BACKUP_DIR, csv_file)
         print(f"🔄 Restoring table: {table_name}")
         
-        restore_cmd = f"""
-        PGPASSWORD={PG_PASSWORD} psql -h localhost -U {PG_USER} -d {DB_NAME} -c "\\copy {table_name} FROM '{backup_file}' WITH CSV HEADER;"
-        """
         try:
-            subprocess.run(restore_cmd, shell=True, check=True)
+            subprocess.run(
+                f"PGPASSWORD={PG_PASSWORD} psql -h localhost -U {PG_USER} -d {DB_NAME} -c \"\\copy {table_name} FROM '{backup_file}' WITH CSV HEADER;\"",
+                shell=True,
+                check=True
+            )
             print(f"✅ Table {table_name} restored successfully!")
         except subprocess.CalledProcessError as e:
             print(f"❌ Error restoring table {table_name}: {e}")
