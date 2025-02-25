@@ -11,13 +11,13 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: mysecretpassword
-          POSTGRES_DB: mydb
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d mydb"
+          --health-cmd "pg_isready -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }}"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -29,6 +29,16 @@ jobs:
       - name: Install PostgreSQL client
         run: sudo apt-get install -y postgresql-client
 
+      - name: Wait for PostgreSQL to be fully ready
+        run: |
+          echo "⏳ Waiting for PostgreSQL to be ready..."
+          for i in {1..20}; do
+            PGPASSWORD=${{ secrets.POSTGRES_PASSWORD }} psql -h localhost -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }} -c "SELECT 1;" && break
+            echo "🔄 Still waiting..."
+            sleep 3
+          done
+          echo "✅ PostgreSQL is ready!"
+
       - name: Run PostgreSQL Backup
         env:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
@@ -36,7 +46,9 @@ jobs:
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
           BACKUP_DIR: backup
           MODE: backup
-        run: python3 postgres_backup_restore.py
+        run: |
+          mkdir -p backup  # Ensure backup directory exists
+          python3 postgres_backup_restore.py
 
       - name: Upload backup files as artifact
         uses: actions/upload-artifact@v4
@@ -52,4 +64,6 @@ jobs:
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
           BACKUP_DIR: backup
           MODE: restore
-        run: python3 postgres_backup_restore.py
+        run: |
+          mkdir -p backup  # Ensure backup directory exists
+          python3 postgres_backup_restore.py
