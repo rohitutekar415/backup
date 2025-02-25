@@ -2,11 +2,11 @@ import os
 import subprocess
 import time
 
-# Database credentials from environment variables
-PG_USER = os.getenv("POSTGRES_USER")
-PG_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-DB_NAME = os.getenv("POSTGRES_DB")
-BACKUP_DIR = os.getenv("BACKUP_DIR", "/backup")
+# Database credentials
+PG_USER = "postgres"
+PG_PASSWORD = "mysecretpassword"
+DB_NAME = "mydb"
+BACKUP_DIR = "/backup"
 SCHEMA_FILE = f"{BACKUP_DIR}/schema.sql"
 
 # Function to check if PostgreSQL is ready
@@ -14,7 +14,7 @@ def wait_for_postgres():
     while True:
         try:
             subprocess.run(
-                f"PGPASSWORD={PG_PASSWORD} psql -h db -U {PG_USER} -d {DB_NAME} -c 'SELECT 1;'",
+                f"PGPASSWORD={PG_PASSWORD} psql -h localhost -U {PG_USER} -d {DB_NAME} -c 'SELECT 1;'",
                 shell=True,
                 check=True,
                 stdout=subprocess.DEVNULL,
@@ -34,7 +34,7 @@ def backup_database():
     # Backup schema
     try:
         subprocess.run(
-            f"PGPASSWORD={PG_PASSWORD} pg_dump -h db -U {PG_USER} -d {DB_NAME} --schema-only > {SCHEMA_FILE}",
+            f"PGPASSWORD={PG_PASSWORD} pg_dump -h localhost -U {PG_USER} -d {DB_NAME} --schema-only > {SCHEMA_FILE}",
             shell=True,
             check=True
         )
@@ -46,7 +46,7 @@ def backup_database():
     # Get list of tables
     try:
         result = subprocess.run(
-            f"PGPASSWORD={PG_PASSWORD} psql -h db -U {PG_USER} -d {DB_NAME} -t -c \"SELECT tablename FROM pg_tables WHERE schemaname='public';\"",
+            f"PGPASSWORD={PG_PASSWORD} psql -h localhost -U {PG_USER} -d {DB_NAME} -t -c \"SELECT tablename FROM pg_tables WHERE schemaname='public';\"",
             shell=True,
             check=True,
             capture_output=True,
@@ -64,7 +64,7 @@ def backup_database():
             
             try:
                 subprocess.run(
-                    f"PGPASSWORD={PG_PASSWORD} psql -h db -U {PG_USER} -d {DB_NAME} -c \"\\copy {table} TO '{backup_file}' WITH CSV HEADER;\"",
+                    f"PGPASSWORD={PG_PASSWORD} psql -h localhost -U {PG_USER} -d {DB_NAME} -c \"\\copy {table} TO '{backup_file}' WITH CSV HEADER;\"",
                     shell=True,
                     check=True
                 )
@@ -88,7 +88,7 @@ def restore_database():
     # Restore schema
     try:
         subprocess.run(
-            f"PGPASSWORD={PG_PASSWORD} psql -h db -U {PG_USER} -d {DB_NAME} -f {SCHEMA_FILE}",
+            f"PGPASSWORD={PG_PASSWORD} psql -h localhost -U {PG_USER} -d {DB_NAME} -f {SCHEMA_FILE}",
             shell=True,
             check=True
         )
@@ -108,7 +108,7 @@ def restore_database():
         print(f"🔄 Restoring table: {table_name}")
         
         restore_cmd = f"""
-        PGPASSWORD={PG_PASSWORD} psql -h db -U {PG_USER} -d {DB_NAME} -c "\\copy {table_name} FROM '{backup_file}' WITH CSV HEADER;"
+        PGPASSWORD={PG_PASSWORD} psql -h localhost -U {PG_USER} -d {DB_NAME} -c "\\copy {table_name} FROM '{backup_file}' WITH CSV HEADER;"
         """
         try:
             subprocess.run(restore_cmd, shell=True, check=True)
